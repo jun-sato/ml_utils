@@ -1,6 +1,14 @@
 import random
 import numpy as np
 import torch
+import matplotlib as mpl
+
+def plot_settings():
+    """
+    set the default plot settings for matplotlib in order to edit the output in Illustrator.
+    """
+    mpl.rcParams['pdf.fonttype']=42
+    mpl.rcParams['ps.fonttype']=42
 
 
 def seed_everything(seed=42):
