@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from utils import plot_settings
+from scipy import stats
 
 
 def plot_bland_altmann(y_true, y_pred, title='Bland-Altman plot', ax=None):
@@ -34,6 +35,9 @@ def plot_bland_altmann(y_true, y_pred, title='Bland-Altman plot', ax=None):
     mean_diff = np.mean(diff)
     LoA = 1.96 * np.std(diff)
     
+    # Perform a t-test to calculate the p-value for the mean difference
+    t_stat, p_value = stats.ttest_rel(y_true, y_pred)
+    
     # Plot the Bland-Altman plot
     ax.scatter(mean, diff, color='black', s=10)
     ax.axhline(mean_diff, color='red', linestyle='--', label=f'Mean Difference: {mean_diff:.2f}')
@@ -45,5 +49,8 @@ def plot_bland_altmann(y_true, y_pred, title='Bland-Altman plot', ax=None):
     ax.set_xlabel('Mean of True and Predicted Measurements')
     ax.set_ylabel('Difference between True and Predicted Measurements')
     ax.legend()
+    
+    # Add the p-value as text to the plot
+    ax.text(0.05, 0.95, f'p-value: {p_value:.3f}', transform=ax.transAxes, verticalalignment='top')
     
     return ax
