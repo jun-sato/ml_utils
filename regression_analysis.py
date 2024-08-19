@@ -1,12 +1,19 @@
+import statsmodels
 import statsmodels.api as sm
 from lifelines import CoxPHFitter
-from sklearn.preprocessing import LabelEncoder
+from sklearn.preprocessing import StandardScaler, LabelEncoder
 
 def univariate_cox_regression(df, duration_col, event_col, feature):
     tmp = df.dropna(subset=[duration_col, event_col, feature], axis=0)
     if tmp[feature].dtype == 'object':
         le = LabelEncoder()
         tmp[feature] = le.fit_transform(tmp[feature])
+    elif tmp[feature].nunique() == 2:
+        tmp[feature] = tmp[feature].astype(int)  # Convert feature to integer if it is binary
+    else:
+        tmp[feature] = tmp[feature].astype(float)  # Convert feature to float if it is continuous
+        scaler = StandardScaler()
+        tmp[feature] = scaler.fit_transform(tmp[[feature]])
         
     cph = CoxPHFitter()
     cph.fit(tmp[[duration_col, event_col, feature]], duration_col=duration_col, event_col=event_col)
@@ -16,14 +23,25 @@ def univariate_cox_regression(df, duration_col, event_col, feature):
     print(f"p value: {cph.summary.loc[feature, 'p']}")
     
 def multivariate_cox_regression(df, duration_col, event_col, features, adjust_vars=None):
+    if isinstance(features, str):
+        features = [features]
+    if isinstance(adjust_vars, str):
+        adjust_vars = [adjust_vars]
     if adjust_vars is None:
         adjust_vars = []
     
-    tmp = df.dropna(subset=[duration_col, event_col] + features + adjust_vars, axis=0)
-    for feature in features:
+    tmp = df.dropna(subset=[duration_col] + [event_col] + features + adjust_vars, axis=0)
+    for feature in features + adjust_vars:
         if tmp[feature].dtype == 'object':
             le = LabelEncoder()
             tmp[feature] = le.fit_transform(tmp[feature])
+        elif tmp[feature].nunique() == 2:
+            tmp[feature] = tmp[feature].astype(int)  # Convert feature to integer if it is binary
+        else:
+            tmp[feature] = tmp[feature].astype(float)  # Convert feature to float if it is continuous
+            scaler = StandardScaler()
+            tmp[feature] = scaler.fit_transform(tmp[[feature]])
+    
     cph = CoxPHFitter()
     cph.fit(tmp[[duration_col, event_col] + features + adjust_vars], duration_col=duration_col, event_col=event_col)
     
@@ -50,6 +68,12 @@ def univariate_logistic_regression(df, target, feature):
     if tmp[feature].dtype == 'object':
         le = LabelEncoder()
         tmp[feature] = le.fit_transform(tmp[feature])
+    elif tmp[feature].nunique() == 2:
+        tmp[feature] = tmp[feature].astype(int)  # Convert feature to integer if it is binary
+    else:
+        tmp[feature] = tmp[feature].astype(float)  # Convert feature to float if it is continuous
+        scaler = StandardScaler()
+        tmp[feature] = scaler.fit_transform(tmp[[feature]])
         
     X = tmp[[feature]].values
     X = sm.add_constant(X)  # 定数項を追加
@@ -86,6 +110,12 @@ def multivariate_logistic_regression(df, target, features, adjust_vars=None):
         if tmp[feature].dtype == 'object':
             le = LabelEncoder()
             tmp[feature] = le.fit_transform(tmp[feature])
+        elif tmp[feature].nunique() == 2:
+            tmp[feature] = tmp[feature].astype(int)  # Convert feature to integer if it is binary
+        else:
+            tmp[feature] = tmp[feature].astype(float)  # Convert feature to float if it is continuous
+            scaler = StandardScaler()
+            tmp[feature] = scaler.fit_transform(tmp[[feature]])
     X = tmp[features + adjust_vars].values
     X = sm.add_constant(X)  # 定数項を追加
     y = tmp[target]
